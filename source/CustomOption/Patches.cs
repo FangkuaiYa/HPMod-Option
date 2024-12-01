@@ -1,10 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
-using Reactor;
-using Reactor.Extensions;
-using UnhollowerBaseLib;
+using Reactor.Utilities.Extensions;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine;
+using Il2CppInterop.Runtime;
+using System.Reflection;
+using System.IO;
+using System;
+using Object = UnityEngine.Object;
 
 namespace CustomOption.CustomOption
 {
@@ -23,7 +27,6 @@ namespace CustomOption.CustomOption
             var togglePrefab = Object.FindObjectOfType<ToggleOption>();
             var numberPrefab = Object.FindObjectOfType<NumberOption>();
             var stringPrefab = Object.FindObjectOfType<StringOption>();
-
 
             if (ExportButton.Setting != null)
             {
@@ -139,55 +142,134 @@ namespace CustomOption.CustomOption
         [HarmonyPatch(typeof(GameSettingMenu), nameof(GameSettingMenu.Start))]
         private class OptionsMenuBehaviour_Start
         {
+
             public static void Postfix(GameSettingMenu __instance)
             {
                 var obj = __instance.RolesSettingsHightlight.gameObject.transform.parent.parent;
-                var touSettings = Object.Instantiate(__instance.RegularGameSettings, __instance.RegularGameSettings.transform.parent);
-                touSettings.SetActive(false);
-                touSettings.name = "HPSettings";
-
-                var gameGroup = touSettings.transform.FindChild("GameGroup");
-                var title = gameGroup?.FindChild("Text");
-
-                if (title != null)
+                var diff = 0.906f * 1 - 2;
+                obj.transform.localPosition = new Vector3(obj.transform.localPosition.x - diff, obj.transform.localPosition.y, obj.transform.localPosition.z);
+                __instance.GameSettingsHightlight.gameObject.transform.parent.localPosition = new Vector3(obj.transform.localPosition.x, obj.transform.localPosition.y, obj.transform.localPosition.z);
+                List<GameObject> menug = new List<GameObject>();
+                List<SpriteRenderer> menugs = new List<SpriteRenderer>();
+                for (int index = 0; index < 1; index++)
                 {
-                    title.GetComponent<TextTranslatorTMP>().Destroy();
-                    title.GetComponent<TMPro.TextMeshPro>().m_text = "Harry Potter Settings";
+                    var touSettings = Object.Instantiate(__instance.RegularGameSettings, __instance.RegularGameSettings.transform.parent);
+                    touSettings.SetActive(false);
+                    touSettings.name = "HPSettings";
+
+                    var gameGroup = touSettings.transform.FindChild("GameGroup");
+                    var title = gameGroup?.FindChild("Text");
+
+                    if (title != null)
+                    {
+                        title.GetComponent<TextTranslatorTMP>().Destroy();
+                        title.GetComponent<TMPro.TextMeshPro>().m_text = $"Harry Potter Settings";
+                    }
+                    var sliderInner = gameGroup?.FindChild("SliderInner");
+                    if (sliderInner != null)
+                        sliderInner.GetComponent<GameOptionsMenu>().name = $"HpOptionsMenu";
+
+                    var ourSettingsButton = Object.Instantiate(obj.gameObject, obj.transform.parent);
+                    ourSettingsButton.transform.localPosition = new Vector3(obj.localPosition.x + (0.906f * (index)), obj.localPosition.y, obj.localPosition.z);
+                    ourSettingsButton.name = $"HPtab";
+                    var hatButton = ourSettingsButton.transform.GetChild(0); //TODO:  change to FindChild I guess to be sure
+                    var hatIcon = hatButton.GetChild(0);
+                    var tabBackground = hatButton.GetChild(1);
+
+                    __instance.RolesSettingsHightlight.gameObject.SetActive(false);
+                    __instance.RolesSettingsHightlight.sprite = LoadResources.loadSpriteFromResources("HarryPotter.Resources.BLANK.png", 100f);
+                    var renderer = hatIcon.GetComponent<SpriteRenderer>();
+                    renderer.sprite = LoadResources.loadSpriteFromResources("HarryPotter.Resources.ModSettings.png", 100f);
+                    var touSettingsHighlight = tabBackground.GetComponent<SpriteRenderer>();
+                    menug.Add(touSettings);
+                    menugs.Add(touSettingsHighlight);
+
+                    PassiveButton passiveButton = tabBackground.GetComponent<PassiveButton>();
+                    passiveButton.OnClick = new UnityEngine.UI.Button.ButtonClickedEvent();
+                    passiveButton.OnClick.AddListener(ToggleButton(__instance, menug, menugs, index + 2));
+
+                    //fix for scrollbar (bug in among us)
+                    touSettings.GetComponentInChildren<Scrollbar>().parent = touSettings.GetComponentInChildren<Scroller>();
                 }
-                var sliderInner = gameGroup?.FindChild("SliderInner");
-                if (sliderInner != null)
-                    sliderInner.GetComponent<GameOptionsMenu>().name = "HpGameOptionsMenu";
+                PassiveButton passiveButton2 = __instance.GameSettingsHightlight.GetComponent<PassiveButton>();
+                passiveButton2.OnClick = new UnityEngine.UI.Button.ButtonClickedEvent();
+                passiveButton2.OnClick.AddListener(ToggleButton(__instance, menug, menugs, 0));
+                passiveButton2 = __instance.RolesSettingsHightlight.GetComponent<PassiveButton>();
+                passiveButton2.OnClick = new UnityEngine.UI.Button.ButtonClickedEvent();
+                passiveButton2.OnClick.AddListener(ToggleButton(__instance, menug, menugs, 1));
 
-                var ourSettingsButton = Object.Instantiate(obj.gameObject, obj.transform.parent);
-                ourSettingsButton.transform.localPosition = new Vector3(obj.localPosition.x + 0.906f, obj.localPosition.y, obj.localPosition.z);
-                ourSettingsButton.name = "HPtab";
-                var hatButton = ourSettingsButton.transform.GetChild(0); //TODO:  change to FindChild I guess to be sure
-                var hatIcon = hatButton.GetChild(0);
-                var tabBackground = hatButton.GetChild(1);
-
-                //var renderer = hatIcon.GetComponent<SpriteRenderer>();
-                //renderer.sprite = TownOfUs.SettingsButtonSprite;
-                var touSettingsHighlight = tabBackground.GetComponent<SpriteRenderer>();
-                PassiveButton passiveButton = __instance.GameSettingsHightlight.GetComponent<PassiveButton>();
-                passiveButton.OnClick = new UnityEngine.UI.Button.ButtonClickedEvent();
-                passiveButton.OnClick.AddListener(ToggleButton(__instance, touSettings, touSettingsHighlight, 0));
-                passiveButton = __instance.RolesSettingsHightlight.GetComponent<PassiveButton>();
-                passiveButton.OnClick = new UnityEngine.UI.Button.ButtonClickedEvent();
-                passiveButton.OnClick.AddListener(ToggleButton(__instance, touSettings, touSettingsHighlight, 1));
-                passiveButton = tabBackground.GetComponent<PassiveButton>();
-                passiveButton.OnClick = new UnityEngine.UI.Button.ButtonClickedEvent();
-                passiveButton.OnClick.AddListener(ToggleButton(__instance, touSettings, touSettingsHighlight, 2));
-
-                //fix for scrollbar (bug in among us)
-                touSettings.GetComponentInChildren<Scrollbar>().parent = touSettings.GetComponentInChildren<Scroller>();
                 __instance.RegularGameSettings.GetComponentInChildren<Scrollbar>().parent = __instance.RegularGameSettings.GetComponentInChildren<Scroller>();
                 __instance.RolesSettings.GetComponentInChildren<Scrollbar>().parent = __instance.RolesSettings.GetComponentInChildren<Scroller>();
 
 
             }
         }
+        public static class LoadResources
+        {
+            public static Sprite loadSpriteFromResources(string path, float pixelsPerUnit)
+            {
+                try
+                {
+                    Texture2D texture = loadTextureFromResources(path);
+                    return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), pixelsPerUnit);
+                }
+                catch
+                {
+                    System.Console.WriteLine("Error loading sprite from path: " + path);
+                }
+                return null;
+            }
 
-        public static System.Action ToggleButton(GameSettingMenu settingMenu, GameObject TouSettings, SpriteRenderer highlight, int id)
+            public static Texture2D loadTextureFromResources(string path)
+            {
+                try
+                {
+                    Texture2D texture = new Texture2D(2, 2, TextureFormat.ARGB32, true);
+                    Assembly assembly = Assembly.GetExecutingAssembly();
+                    Stream stream = assembly.GetManifestResourceStream(path);
+                    var byteTexture = new byte[stream.Length];
+                    var read = stream.Read(byteTexture, 0, (int)stream.Length);
+                    LoadImage(texture, byteTexture, false);
+                    return texture;
+                }
+                catch
+                {
+                    System.Console.WriteLine("Error loading texture from resources: " + path);
+                }
+                return null;
+            }
+
+            public static Texture2D loadTextureFromDisk(string path)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        Texture2D texture = new Texture2D(2, 2, TextureFormat.ARGB32, true);
+                        byte[] byteTexture = File.ReadAllBytes(path);
+                        LoadImage(texture, byteTexture, false);
+                        return texture;
+                    }
+                }
+                catch
+                {
+                    System.Console.WriteLine("Error loading texture from disk: " + path);
+                }
+                return null;
+            }
+
+            internal delegate bool d_LoadImage(IntPtr tex, IntPtr data, bool markNonReadable);
+            internal static d_LoadImage iCall_LoadImage;
+            private static bool LoadImage(Texture2D tex, byte[] data, bool markNonReadable)
+            {
+                if (iCall_LoadImage == null)
+                    iCall_LoadImage = IL2CPP.ResolveICall<d_LoadImage>("UnityEngine.ImageConversion::LoadImage");
+                var il2cppArray = (Il2CppStructArray<byte>)data;
+                return iCall_LoadImage.Invoke(tex.Pointer, il2cppArray.Pointer, markNonReadable);
+            }
+        }
+
+        public static System.Action ToggleButton(GameSettingMenu settingMenu, List<GameObject> TouSettings, List<SpriteRenderer> highlight, int id)
         {
             return new System.Action(() =>
             {
@@ -195,8 +277,11 @@ namespace CustomOption.CustomOption
                 settingMenu.GameSettingsHightlight.enabled = id == 0;
                 settingMenu.RolesSettings.gameObject.SetActive(id == 1);
                 settingMenu.RolesSettingsHightlight.enabled = id == 1;
-                highlight.enabled = id == 2;
-                TouSettings.SetActive(id == 2);
+                foreach (GameObject g in TouSettings)
+                {
+                    g.SetActive(id == TouSettings.IndexOf(g) + 2);
+                    highlight[TouSettings.IndexOf(g)].enabled = id == TouSettings.IndexOf(g) + 2;
+                }
             });
         }
 
@@ -205,59 +290,35 @@ namespace CustomOption.CustomOption
         {
             public static bool Prefix(GameOptionsMenu __instance)
             {
-
-                if (__instance.name != "HpGameOptionsMenu")
-                    return true;
-                __instance.Children = new Il2CppReferenceArray<OptionBehaviour>(new OptionBehaviour[0]);
-                var childeren = new Transform[__instance.gameObject.transform.childCount];
-                for (int k = 0; k < childeren.Length; k++)
+                for (int index = 0; index < 1; index++)
                 {
-                    childeren[k] = __instance.gameObject.transform.GetChild(k); //TODO: Make a better fix for this for example caching the options or creating it ourself.
+                    if (__instance.name == $"HpOptionsMenu")
+                    {
+                        __instance.Children = new Il2CppReferenceArray<OptionBehaviour>(new OptionBehaviour[0]);
+                        var childeren = new Transform[__instance.gameObject.transform.childCount];
+                        for (int k = 0; k < childeren.Length; k++)
+                        {
+                            childeren[k] = __instance.gameObject.transform.GetChild(k); //TODO: Make a better fix for this for example caching the options or creating it ourself.
+                        }
+                        var startOption = __instance.gameObject.transform.GetChild(0);
+                        var customOptions = CreateOptions(__instance);
+                        var y = startOption.localPosition.y;
+                        var x = startOption.localPosition.x;
+                        var z = startOption.localPosition.z;
+                        for (int k = 0; k < childeren.Length; k++)
+                        {
+                            childeren[k].gameObject.Destroy();
+                        }
+
+                        var i = 0;
+                        foreach (var option in customOptions)
+                            option.transform.localPosition = new Vector3(x, y - i++ * 0.5f, z);
+
+                        __instance.Children = new Il2CppReferenceArray<OptionBehaviour>(customOptions.ToArray());
+                        return false;
+                    }
                 }
-                var startOption = __instance.gameObject.transform.GetChild(0);
-                var customOptions = CreateOptions(__instance);
-                var y = startOption.localPosition.y;
-                var x = startOption.localPosition.x;
-                var z = startOption.localPosition.z;
-                for (int k = 0; k < childeren.Length; k++)
-                {
-                    childeren[k].gameObject.Destroy();
-                }
-
-                var i = 0;
-                foreach (var option in customOptions)
-                    option.transform.localPosition = new Vector3(x, y - i++ * 0.5f, z);
-
-                __instance.Children = new Il2CppReferenceArray<OptionBehaviour>(customOptions.ToArray());
-                return false;
-
-            }
-        }
-
-        [HarmonyPatch(typeof(GameOptionsMenu), nameof(GameOptionsMenu.Update))]
-        private class GameOptionsMenu_Update
-        {
-            public static void Postfix(GameOptionsMenu __instance)
-            {
-                if (__instance.Children == null || __instance.Children.Length == 0)
-                    return;
-                var y = __instance.GetComponentsInChildren<OptionBehaviour>()
-                    .Max(option => option.transform.localPosition.y);
-                float x, z;
-                if (__instance.Children.Length == 1)
-                {
-                    x = __instance.Children[0].transform.localPosition.x;
-                    z = __instance.Children[0].transform.localPosition.z;
-                }
-                else
-                {
-                    x = __instance.Children[1].transform.localPosition.x;
-                    z = __instance.Children[1].transform.localPosition.z;
-                }
-
-                var i = 0;
-                foreach (var option in __instance.Children)
-                    option.transform.localPosition = new Vector3(x, y - i++ * 0.5f, z);
+                return true;
             }
         }
 
@@ -494,7 +555,7 @@ namespace CustomOption.CustomOption
                 Scroller.active = true;
                 Scroller.velocity = new Vector2(0, 0);
                 Scroller.ScrollbarYBounds = new FloatRange(0, 0);
-                Scroller.ContentYBounds = new FloatRange(MinX, MinX);
+                Scroller.ContentXBounds = new FloatRange(MinX, MinX);
                 Scroller.enabled = true;
 
                 Scroller.Inner = __instance.GameSettings.transform;

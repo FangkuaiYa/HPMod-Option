@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Il2CppSystem.Text;
-using Reactor;
-using Reactor.Extensions;
-using UnhollowerBaseLib;
+using Reactor.Utilities;
+using Reactor.Utilities.Extensions;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine;
-using Object = UnityEngine.Object; //using Il2CppSystem.Collections.Generic;
+using Object = UnityEngine.Object;
 
 namespace CustomOption.CustomOption
 {
@@ -19,7 +19,7 @@ namespace CustomOption.CustomOption
 
         public List<CustomButtonOption> SlotButtons = new List<CustomButtonOption>();
 
-        protected internal Export(int id) : base(id, "Save Custom Settings")
+        public Export(int id) : base(id, "Save Custom Settings")
         {
             Do = ToDo;
         }
@@ -54,12 +54,12 @@ namespace CustomOption.CustomOption
             return options;
         }
 
-        protected internal void Cancel(Func<IEnumerator> flashCoro)
+        public void Cancel(Func<IEnumerator> flashCoro)
         {
             Coroutines.Start(CancelCoro(flashCoro));
         }
 
-        protected internal IEnumerator CancelCoro(Func<IEnumerator> flashCoro)
+        public IEnumerator CancelCoro(Func<IEnumerator> flashCoro)
         {
             var __instance = Object.FindObjectOfType<GameOptionsMenu>();
             foreach (var option in SlotButtons.Skip(1)) option.Setting.gameObject.Destroy();
@@ -84,12 +84,14 @@ namespace CustomOption.CustomOption
             yield return flashCoro();
         }
 
-        protected internal void ToDo()
+        public void ToDo()
         {
             SlotButtons.Clear();
             SlotButtons.Add(new CustomButtonOption(1, "Slot 1", delegate { ExportSlot(1); }));
             SlotButtons.Add(new CustomButtonOption(1, "Slot 2", delegate { ExportSlot(2); }));
             SlotButtons.Add(new CustomButtonOption(1, "Slot 3", delegate { ExportSlot(3); }));
+            SlotButtons.Add(new CustomButtonOption(1, "Slot 4", delegate { ExportSlot(4); }));
+            SlotButtons.Add(new CustomButtonOption(1, "Slot 5", delegate { ExportSlot(5); }));
             SlotButtons.Add(new CustomButtonOption(1, "Cancel", delegate { Cancel(FlashWhite); }));
 
             var options = CreateOptions();

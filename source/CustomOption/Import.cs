@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Reactor;
-using Reactor.Extensions;
-using UnhollowerBaseLib;
+using Reactor.Utilities;
+using Reactor.Utilities.Extensions;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -18,7 +18,7 @@ namespace CustomOption.CustomOption
 
         public List<CustomButtonOption> SlotButtons = new List<CustomButtonOption>();
 
-        protected internal Import(int id) : base(id, "Load Custom Settings")
+        public Import(int id) : base(id, "Load Custom Settings")
         {
             Do = ToDo;
         }
@@ -53,12 +53,12 @@ namespace CustomOption.CustomOption
             return options;
         }
 
-        protected internal void Cancel(Func<IEnumerator> flashCoro)
+        public void Cancel(Func<IEnumerator> flashCoro)
         {
             Coroutines.Start(CancelCoro(flashCoro));
         }
 
-        protected internal IEnumerator CancelCoro(Func<IEnumerator> flashCoro)
+        public IEnumerator CancelCoro(Func<IEnumerator> flashCoro)
         {
             var __instance = Object.FindObjectOfType<GameOptionsMenu>();
             foreach (var option in SlotButtons.Skip(1)) option.Setting.gameObject.Destroy();
@@ -83,12 +83,14 @@ namespace CustomOption.CustomOption
             yield return flashCoro();
         }
 
-        protected internal void ToDo()
+        public void ToDo()
         {
             SlotButtons.Clear();
             SlotButtons.Add(new CustomButtonOption(1, "Slot 1", delegate { ImportSlot(1); }));
             SlotButtons.Add(new CustomButtonOption(1, "Slot 2", delegate { ImportSlot(2); }));
             SlotButtons.Add(new CustomButtonOption(1, "Slot 3", delegate { ImportSlot(3); }));
+            SlotButtons.Add(new CustomButtonOption(1, "Slot 4", delegate { ImportSlot(4); }));
+            SlotButtons.Add(new CustomButtonOption(1, "Slot 5", delegate { ImportSlot(5); }));
             SlotButtons.Add(new CustomButtonOption(1, "Cancel", delegate { Cancel(FlashWhite); }));
 
             var options = CreateOptions();

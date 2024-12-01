@@ -1,11 +1,9 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using CustomOption.CustomOption;
 using HarmonyLib;
-using Reactor.Extensions;
-using UnityEngine;
+using Reactor.Utilities.Extensions;
 
 namespace CustomOption
 {
@@ -28,32 +26,11 @@ namespace CustomOption
 
                 foreach (var option in CustomOption.CustomOption.AllOptions)
                 {
-                    if (option.Name == "Custom Game Settings" && !AllOptions) break;
-                    if (option.Type == CustomOptionType.Button) continue;
-                    if (option.Type == CustomOptionType.Header) builder.AppendLine($"\n{option.Name}");
-                    else if (option.Indent) builder.AppendLine($"     {option.Name}: {option}");
-                    else builder.AppendLine($"{option.Name}: {option}");
+                    builder.AppendLine($"{option.Name}");
                 }
 
-
-                __result = builder.ToString();
-
-
-                if (CustomOption.CustomOption.LobbyTextScroller && __result.Count(c => c == '\n') > 38)
-                    __result = __result.Insert(__result.IndexOf('\n'), " (Scroll for more)");
-                else __result = __result.Insert(__result.IndexOf('\n'), "Press Tab to see All Options");
-
-
+                __result += "\n\n" + builder.ToString();
                 __result = $"<size=1.25>{__result}</size>";
-            }
-        }
-
-        [HarmonyPatch(typeof(LobbyBehaviour), nameof(LobbyBehaviour.FixedUpdate))]
-        private static class LobbyBehaviourPatch
-        {
-            private static void Postfix()
-            {
-                if (Input.GetKeyInt(KeyCode.Tab)) AllOptions = !AllOptions;
             }
         }
 
@@ -62,7 +39,7 @@ namespace CustomOption
         {
             public static void Postfix(ref GameOptionsMenu __instance)
             {
-                __instance.GetComponentInParent<Scroller>().ContentYBounds.max = 90f;
+                __instance.GetComponentInParent<Scroller>().ContentYBounds.max = (__instance.Children.Length - 6.5f) / 2;
             }
         }
     }

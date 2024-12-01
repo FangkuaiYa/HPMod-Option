@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using Hazel;
-using Reactor;
+using Reactor.Utilities;
 
 namespace CustomOption.CustomOption
 {
@@ -20,17 +20,22 @@ namespace CustomOption.CustomOption
             else
                 options = CustomOption.AllOptions;
 
-            var writer = AmongUsClient.Instance.StartRpc(PlayerControl.LocalPlayer.NetId,
+            var writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId,
                 (byte) CustomRPC.SyncCustomSettings, SendOption.Reliable);
             foreach (var option in options)
             {
+                if (writer.Position > 1000) {
+                    AmongUsClient.Instance.FinishRpcImmediately(writer);
+                    writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId,
+                        (byte) CustomRPC.SyncCustomSettings, SendOption.Reliable);
+                }
                 writer.Write(option.ID);
                 if (option.Type == CustomOptionType.Toggle) writer.Write((bool) option.Value);
                 else if (option.Type == CustomOptionType.Number) writer.Write((float) option.Value);
                 else if (option.Type == CustomOptionType.String) writer.Write((int) option.Value);
             }
 
-            writer.EndMessage();
+            AmongUsClient.Instance.FinishRpcImmediately(writer);
         }
 
         public static void ReceiveRpc(MessageReader reader)
