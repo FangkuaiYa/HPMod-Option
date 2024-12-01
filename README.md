@@ -1,4 +1,4 @@
-# HPMod-Option
+# AmongUs-PingTextChange-SChinese
 
 用于适配Harry Potter Mod的一个设置UI插件
 

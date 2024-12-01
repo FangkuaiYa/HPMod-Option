@@ -18,6 +18,7 @@ public partial class CustomOptionPlugin : BasePlugin
 
     public override void Load()
     {
+        Generate.GenerateAll();
         Harmony.PatchAll();
     }
 }
